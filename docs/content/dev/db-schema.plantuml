@@ -74,7 +74,7 @@ entity "revision" {
 entity "authorship" {
   *id : uuid <<generated>>
   --
-  *userId : uuid <FK user>>
+  *authorId : uuid <FK user>>
   *startPos : number
   *endPos : number
   *createdAt : date
@@ -87,7 +87,7 @@ entity "revision_authorship" {
 }
 
 entity "author" {
-  *id : uuid <<generated>>
+  *id : number <<generated>>
   --
   *color : text
   sessionID : text <<FK session>>
