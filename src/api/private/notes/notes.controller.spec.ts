@@ -5,6 +5,8 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { Author } from '../../../authors/author.entity';
+import { Session } from '../../../users/session.entity';
 import { NotesController } from './notes.controller';
 import { NotesService } from '../../../notes/notes.service';
 import {
@@ -73,7 +75,6 @@ describe('NotesController', () => {
       .useValue({})
       .overrideProvider(getRepositoryToken(Authorship))
       .useValue({})
-
       .overrideProvider(getRepositoryToken(User))
       .useValue({})
       .overrideProvider(getRepositoryToken(AuthToken))
@@ -93,6 +94,10 @@ describe('NotesController', () => {
       .overrideProvider(getRepositoryToken(Group))
       .useValue({})
       .overrideProvider(getRepositoryToken(MediaUpload))
+      .useValue({})
+      .overrideProvider(getRepositoryToken(Session))
+      .useValue({})
+      .overrideProvider(getRepositoryToken(Author))
       .useValue({})
       .compile();
 
