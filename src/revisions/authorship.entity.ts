@@ -13,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Author } from '../authors/author.entity';
 import { User } from '../users/user.entity';
 import { Revision } from './revision.entity';
 
@@ -35,6 +36,9 @@ export class Authorship {
    */
   @ManyToOne((_) => User)
   user: User;
+
+  @ManyToOne(() => Author, (author) => author.authorships)
+  author: Author;
 
   @Column()
   startPos: number;

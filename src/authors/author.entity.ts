@@ -4,14 +4,37 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { Note } from '../notes/note.entity';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Authorship } from '../revisions/authorship.entity';
+import { Session } from '../users/session.entity';
+import { User } from '../users/user.entity';
+
+export type AuthorColor = number;
 
 @Entity()
 export class Author {
-  //TODO: Still missing many properties
   @PrimaryGeneratedColumn()
   id: number;
 
-  note: Note;
+  /**
+   * The id of the color of this author
+   * The application maps the id to an actual color
+   */
+  @Column({ type: 'int' })
+  color: AuthorColor;
+
+  @OneToMany(() => Session, (session) => session.author)
+  sessions: Session[];
+
+  @ManyToOne(() => User, (user) => user.authors, { nullable: true })
+  user: User | null;
+
+  @OneToMany(() => Authorship, (authorship) => authorship.author)
+  authorships: Authorship[];
 }
