@@ -51,4 +51,15 @@ export class Authorship {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  private constructor() {}
+
+  public static create(author: Author, startPos: number, endPos: number) {
+    const newAuthorship = new Authorship();
+    newAuthorship.author = author;
+    newAuthorship.startPos = startPos;
+    newAuthorship.endPos = endPos;
+    return newAuthorship;
+  }
 }
