@@ -55,16 +55,28 @@ createConnection({
     notes.push(Note.create(undefined, 'test'));
     notes.push(Note.create(undefined, 'test2'));
     notes.push(Note.create(undefined, 'test3'));
+
     for (let i = 0; i < 3; i++) {
+      const author = Author.create(1);
+      const user = connection.manager.create(User, users[i]);
+      author.user = user;
       const revision = Revision.create(
         'This is a test note1',
         'This is a test note1',
       );
+      const authorship = Authorship.create(author, 1, 42);
+      revision.authorships = [authorship];
       notes[i].revisions = Promise.all([revision]);
       notes[i].userPermissions = [];
       notes[i].groupPermissions = [];
-      users[i].ownedNotes = [notes[i]];
-      await connection.manager.save([notes[i], notes[i], revision]);
+      user.ownedNotes = [notes[i]];
+      await connection.manager.save([
+        notes[i],
+        user,
+        revision,
+        authorship,
+        author,
+      ]);
     }
     const foundUser = await connection.manager.findOne(User);
     if (!foundUser) {
