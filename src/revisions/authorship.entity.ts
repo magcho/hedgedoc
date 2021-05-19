@@ -14,7 +14,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Author } from '../authors/author.entity';
-import { User } from '../users/user.entity';
 import { Revision } from './revision.entity';
 
 /**
@@ -30,12 +29,6 @@ export class Authorship {
    */
   @ManyToMany((_) => Revision, (revision) => revision.authorships)
   revisions: Revision[];
-
-  /**
-   * User this authorship represents
-   */
-  @ManyToOne((_) => User)
-  user: User;
 
   @ManyToOne(() => Author, (author) => author.authorships)
   author: Author;
