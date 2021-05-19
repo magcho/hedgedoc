@@ -5,6 +5,8 @@
  */
 
 import { createConnection } from 'typeorm';
+import { Author } from './authors/author.entity';
+import { Session } from './users/session.entity';
 import { User } from './users/user.entity';
 import { Note } from './notes/note.entity';
 import { Revision } from './revisions/revision.entity';
@@ -37,32 +39,45 @@ createConnection({
     Tag,
     AuthToken,
     Identity,
+    Author,
+    Session,
   ],
   synchronize: true,
   logging: false,
+  dropSchema: true,
 })
   .then(async (connection) => {
-    const user = User.create('hardcoded', 'Test User');
-    const note = Note.create(undefined, 'test');
-    const revision = Revision.create(
-      'This is a test note',
-      'This is a test note',
-    );
-    note.revisions = Promise.all([revision]);
-    note.userPermissions = [];
-    note.groupPermissions = [];
-    user.ownedNotes = [note];
-    await connection.manager.save([user, note, revision]);
+    const users = [];
+    users.push(User.create('hardcoded', 'Test User 1'));
+    users.push(User.create('hardcoded_2', 'Test User 2'));
+    users.push(User.create('hardcoded_3', 'Test User 3'));
+    const notes: Note[] = [];
+    notes.push(Note.create(undefined, 'test'));
+    notes.push(Note.create(undefined, 'test2'));
+    notes.push(Note.create(undefined, 'test3'));
+    for (let i = 0; i < 3; i++) {
+      const revision = Revision.create(
+        'This is a test note1',
+        'This is a test note1',
+      );
+      notes[i].revisions = Promise.all([revision]);
+      notes[i].userPermissions = [];
+      notes[i].groupPermissions = [];
+      users[i].ownedNotes = [notes[i]];
+      await connection.manager.save([notes[i], notes[i], revision]);
+    }
     const foundUser = await connection.manager.findOne(User);
     if (!foundUser) {
-      throw new Error('Could not find freshly seeded user. Aborting.');
+      throw new Error('Could not find freshly seeded user1. Aborting.');
     }
     const foundNote = await connection.manager.findOne(Note);
     if (!foundNote) {
-      throw new Error('Could not find freshly seeded note. Aborting.');
+      throw new Error('Could not find freshly seeded note1. Aborting.');
     }
     if (!foundNote.alias) {
-      throw new Error('Could not find alias of freshly seeded note. Aborting.');
+      throw new Error(
+        'Could not find alias of freshly seeded note1. Aborting.',
+      );
     }
     const historyEntry = HistoryEntry.create(foundUser, foundNote);
     await connection.manager.save(historyEntry);
