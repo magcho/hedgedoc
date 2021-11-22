@@ -3,7 +3,6 @@
 /* global moment, serverurl */
 
 import Prism from 'prismjs'
-import hljs from 'highlight.js'
 import PDFObject from 'pdfobject'
 import S from 'string'
 import { saveAs } from 'file-saver'
@@ -17,6 +16,8 @@ import markdownitContainer from 'markdown-it-container'
 /* Defined regex markdown it plugins */
 import Plugin from 'markdown-it-regexp'
 
+import 'gist-embed'
+
 require('prismjs/themes/prism.css')
 require('prismjs/components/prism-wiki')
 require('prismjs/components/prism-haskell')
@@ -29,7 +30,6 @@ require('prismjs/components/prism-gherkin')
 require('./lib/common/login')
 require('./locale')
 require('../vendor/md-toc')
-const Viz = require('viz.js')
 const ui = getUIElements()
 
 // auto update last change
@@ -248,8 +248,6 @@ function replaceExtraTags (html) {
   return html
 }
 
-if (typeof window.mermaid !== 'undefined' && window.mermaid) window.mermaid.startOnLoad = false
-
 // dynamic event or object binding here
 export function finishView (view) {
   // todo list
@@ -286,12 +284,12 @@ export function finishView (view) {
   // youtube
   view.find('div.youtube.raw').removeClass('raw')
     .click(function () {
-      imgPlayiframe(this, '//www.youtube.com/embed/')
+      imgPlayiframe(this, 'https://www.youtube.com/embed/')
     })
     // vimeo
   view.find('div.vimeo.raw').removeClass('raw')
     .click(function () {
-      imgPlayiframe(this, '//player.vimeo.com/video/')
+      imgPlayiframe(this, 'https://player.vimeo.com/video/')
     })
     .each((key, value) => {
       const vimeoLink = `https://vimeo.com/${$(value).attr('data-videoid')}`
@@ -367,13 +365,15 @@ export function finishView (view) {
     try {
       $value = $(value)
       const $ele = $(value).parent().parent()
+      require.ensure([], function (require) {
+        const Viz = require('viz.js')
+        const graphviz = Viz($value.text())
+        if (!graphviz) throw Error('viz.js output empty graph')
+        $value.html(graphviz)
 
-      const graphviz = Viz($value.text())
-      if (!graphviz) throw Error('viz.js output empty graph')
-      $value.html(graphviz)
-
-      $ele.addClass('graphviz')
-      $value.children().unwrap().unwrap()
+        $ele.addClass('graphviz')
+        $value.children().unwrap().unwrap()
+      })
     } catch (err) {
       $value.unwrap()
       $value.parent().append(`<div class="alert alert-warning">${escapeHTML(err)}</div>`)
@@ -383,25 +383,26 @@ export function finishView (view) {
   // mermaid
   const mermaids = view.find('div.mermaid.raw').removeClass('raw')
   mermaids.each((key, value) => {
-    let $value
-    try {
-      $value = $(value)
-      const $ele = $(value).closest('pre')
-
-      window.mermaid.mermaidAPI.parse($value.text())
-      $ele.addClass('mermaid')
-      $ele.text($value.text())
-      window.mermaid.init(undefined, $ele)
-    } catch (err) {
-      let errormessage = err
-      if (err.str) {
-        errormessage = err.str
+    const $value = $(value)
+    const $ele = $(value).closest('pre')
+    require.ensure([], function (require) {
+      try {
+        const mermaid = require('mermaid')
+        mermaid.startOnLoad = false
+        mermaid.mermaidAPI.parse($value.text())
+        $ele.addClass('mermaid')
+        $ele.text($value.text())
+        mermaid.init(undefined, $ele)
+      } catch (err) {
+        let errormessage = err
+        if (err.str) {
+          errormessage = err.str
+        }
+        $value.unwrap()
+        $value.parent().append(`<div class="alert alert-warning">${escapeHTML(errormessage)}</div>`)
+        console.warn(errormessage)
       }
-
-      $value.unwrap()
-      $value.parent().append(`<div class="alert alert-warning">${escapeHTML(errormessage)}</div>`)
-      console.warn(errormessage)
-    }
+    })
   })
   // abc.js
   const abcs = view.find('div.abc.raw').removeClass('raw')
@@ -410,14 +411,15 @@ export function finishView (view) {
     try {
       $value = $(value)
       const $ele = $(value).parent().parent()
-
-      window.ABCJS.renderAbc(value, $value.text())
-
-      $ele.addClass('abc')
-      $value.children().unwrap().unwrap()
-      const svg = $ele.find('> svg')
-      svg[0].setAttribute('viewBox', `0 0 ${svg.attr('width')} ${svg.attr('height')}`)
-      svg[0].setAttribute('preserveAspectRatio', 'xMidYMid meet')
+      require.ensure([], function (require) {
+        const abcjs = require('abcjs')
+        abcjs.renderAbc(value, $value.text())
+        $ele.addClass('abc')
+        $value.children().unwrap().unwrap()
+        const svg = $ele.find('> svg')
+        svg[0].setAttribute('viewBox', `0 0 ${svg.attr('width')} ${svg.attr('height')}`)
+        svg[0].setAttribute('preserveAspectRatio', 'xMidYMid meet')
+      })
     } catch (err) {
       $value.unwrap()
       $value.parent().append(`<div class="alert alert-warning">${escapeHTML(err)}</div>`)
@@ -451,7 +453,7 @@ export function finishView (view) {
     .each((key, value) => {
       $.ajax({
         type: 'GET',
-        url: `//www.slideshare.net/api/oembed/2?url=http://www.slideshare.net/${$(value).attr('data-slideshareid')}&format=json`,
+        url: `https://www.slideshare.net/api/oembed/2?url=https://www.slideshare.net/${$(value).attr('data-slideshareid')}&format=json`,
         jsonp: 'callback',
         dataType: 'jsonp',
         success (data) {
@@ -494,6 +496,9 @@ export function finishView (view) {
       const langDiv = $(value)
       if (langDiv.length > 0) {
         const reallang = langDiv[0].className.replace(/hljs|wrap/g, '').trim()
+        if (reallang === 'mermaid' || reallang === 'abc' || reallang === 'graphviz') {
+          return
+        }
         const codeDiv = langDiv.find('.code')
         let code = ''
         if (codeDiv.length > 0) code = codeDiv.html()
@@ -519,13 +524,19 @@ export function finishView (view) {
             value: Prism.highlight(code, Prism.languages.makefile)
           }
         } else {
-          code = S(code).unescapeHTML().s
-          const languages = hljs.listLanguages()
-          if (!languages.includes(reallang)) {
-            result = hljs.highlightAuto(code)
-          } else {
-            result = hljs.highlight(reallang, code)
-          }
+          require.ensure([], function (require) {
+            const hljs = require('highlight.js')
+            code = S(code).unescapeHTML().s
+            const languages = hljs.listLanguages()
+            if (!languages.includes(reallang)) {
+              result = hljs.highlightAuto(code)
+            } else {
+              result = hljs.highlight(reallang, code)
+            }
+            if (codeDiv.length > 0) codeDiv.html(result.value)
+            else langDiv.html(result.value)
+          })
+          return
         }
         if (codeDiv.length > 0) codeDiv.html(result.value)
         else langDiv.html(result.value)
@@ -564,6 +575,14 @@ export function postProcess (code) {
   // also add noopener to prevent clickjacking
   // See details: https://mathiasbynens.github.io/rel-noopener/
   result.find('a:not([href^="#"]):not([target])').attr('target', '_blank').attr('rel', 'noopener')
+
+  // If it's hashtag link then make it base uri independent
+  result.find('a[href^="#"]').each((index, linkTag) => {
+    const currentLocation = new URL(window.location)
+    currentLocation.hash = linkTag.hash
+    linkTag.href = currentLocation.toString()
+  })
+
   // update continue line numbers
   const linenumberdivs = result.find('.gutter.linenumber').toArray()
   for (let i = 0; i < linenumberdivs.length; i++) {
@@ -601,6 +620,18 @@ export function removeDOMEvents (view) {
 }
 window.removeDOMEvents = removeDOMEvents
 
+function toDataURL (url, callback) {
+  fetch(url).then(response => {
+    const fr = new FileReader()
+    fr.onload = function () {
+      callback(this.result)
+    }
+    response.blob().then(blob => {
+      fr.readAsDataURL(blob)
+    })
+  })
+}
+
 function generateCleanHTML (view) {
   const src = view.clone()
   const eles = src.find('*')
@@ -615,10 +646,9 @@ function generateCleanHTML (view) {
   src.find('input.task-list-item-checkbox').attr('disabled', '')
   // replace emoji image path
   src.find('img.emoji').each((key, value) => {
-    let name = $(value).attr('alt')
-    name = name.substr(1)
-    name = name.slice(0, name.length - 1)
-    $(value).attr('src', `https://cdnjs.cloudflare.com/ajax/libs/emojify.js/1.1.0/images/basic/${name}.png`)
+    toDataURL($(value).attr('src'), dataURL => {
+      $(value).attr('src', dataURL)
+    })
   })
   // replace video to iframe
   src.find('div[data-videoid]').each((key, value) => {
@@ -662,25 +692,18 @@ export function exportToHTML (view) {
   const tocAffix = $('#ui-toc-affix').clone()
   tocAffix.find('*').removeClass('active').find("a[href^='#'][smoothhashscroll]").removeAttr('smoothhashscroll')
   // generate html via template
-  $.get(`${serverurl}/build/html.min.css`, css => {
-    $.get(`${serverurl}/views/html.hbs`, data => {
-      const template = window.Handlebars.compile(data)
-      const context = {
-        url: serverurl,
-        title,
-        css,
-        html: src[0].outerHTML,
-        'ui-toc': toc.html(),
-        'ui-toc-affix': tocAffix.html(),
-        lang: (md && md.meta && md.meta.lang) ? `lang="${md.meta.lang}"` : null,
-        dir: (md && md.meta && md.meta.dir) ? `dir="${md.meta.dir}"` : null
-      }
-      const html = template(context)
-      const blob = new Blob([html], {
-        type: 'text/html;charset=utf-8'
-      })
-      saveAs(blob, filename, true)
+  $.get(`${serverurl}/build/htmlexport.html`, template => {
+    let html = template.replace('{{{url}}}', serverurl)
+    html = html.replace('{{title}}', title)
+    html = html.replace('{{{html}}}', src[0].outerHTML)
+    html = html.replace('{{{ui-toc}}}', toc.html())
+    html = html.replace('{{{ui-toc-affix}}}', tocAffix.html())
+    html = html.replace('{{{lang}}}', (md && md.meta && md.meta.lang) ? `lang="${md.meta.lang}"` : '')
+    html = html.replace('{{{dir}}}', (md && md.meta && md.meta.dir) ? `dir="${md.meta.dir}"` : '')
+    const blob = new Blob([html], {
+      type: 'text/html;charset=utf-8'
     })
+    saveAs(blob, filename, true)
   })
 }
 
@@ -1103,7 +1126,7 @@ const youtubePlugin = new Plugin(
     if (!videoid) return
     const div = $('<div class="youtube raw"></div>')
     div.attr('data-videoid', videoid)
-    const thumbnailSrc = `//img.youtube.com/vi/${videoid}/hqdefault.jpg`
+    const thumbnailSrc = `https://img.youtube.com/vi/${videoid}/hqdefault.jpg`
     const image = `<img src="${thumbnailSrc}" />`
     div.append(image)
     const icon = '<i class="icon fa fa-youtube-play fa-5x"></i>'

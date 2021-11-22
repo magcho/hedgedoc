@@ -2,7 +2,7 @@
 
 !!! info "Requirements on your server"
     - Node.js 12 or higher
-    - Database (PostgreSQL, MySQL, MariaDB, SQLite, MSSQL)  
+    - Database (PostgreSQL, MySQL, MariaDB, SQLite)  
       The database must use charset `utf8`. This is typically the default in PostgreSQL and SQLite.  
       In MySQL and MariaDB UTF-8 might need to be set with `alter database <DBNAME> character set utf8 collate utf8_bin;`  
       Be aware of older MySQL and MariaDB versions which sometimes use shorter representations of UTF-8 than 4 bytes.
@@ -16,7 +16,7 @@
 
 1. Check if you meet the [requirements at the top of this document](#manual-installation).
 2. Download the [latest release](https://hedgedoc.org/latest-release/) and extract it.  
-   <small>Alternatively, you can use Git to clone the repository and checkout a release, e.g. with `git clone -b 1.8.2 https://github.com/hedgedoc/hedgedoc.git`.</small>
+   <small>Alternatively, you can use Git to clone the repository and checkout a release, e.g. with `git clone -b 1.9.0 https://github.com/hedgedoc/hedgedoc.git`.</small>
 3. Enter the directory and execute `bin/setup`, which will install the dependencies and create example configs.
 4. Configure HedgeDoc: To get started, you can use this minimal `config.json`:
    ```json
@@ -58,7 +58,7 @@ If you want to upgrade HedgeDoc from an older version, follow these steps:
    and the latest release.
 2. Fully stop your old HedgeDoc server.
 3. [Download](https://hedgedoc.org/latest-release/) the new release and extract it over the old directory.  
-   <small>If you use Git, you can check out the new tag with e.g. `git fetch origin && git checkout 1.8.2`</small>
+   <small>If you use Git, you can check out the new tag with e.g. `git fetch origin && git checkout 1.9.0`</small>
 5. Run `bin/setup`. This will take care of installing dependencies. It is safe to run on an existing installation.
 6. *:octicons-light-bulb-16: If you used the release tarball for 1.7.0 or newer, this step can be skipped.*  
    Build the frontend bundle by running `yarn install` and `yarn build`. The extra `yarn install` is necessary as `bin/setup` does not install the       build dependencies.
