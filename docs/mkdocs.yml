@@ -30,6 +30,7 @@ nav:
           - GitHub: guides/auth/github.md
           - GitLab: guides/auth/gitlab-self-hosted.md
           - Keycloak: guides/auth/keycloak.md
+          - Mattermost: guides/auth/mattermost-self-hosted.md
           - Nextcloud: guides/auth/nextcloud.md
           - Twitter: guides/auth/twitter.md
       - Media Backend:
@@ -47,7 +48,7 @@ nav:
       - 'Operational Transformation': dev/ot.md
       - Webpack: dev/webpack.md
       - 'Documentation': dev/documentation.md
-  - FAQ: https://hedgedoc.org/faq
+  - FAQ: faq.md
 markdown_extensions:
   - toc:
       permalink: true

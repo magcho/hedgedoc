@@ -1,3 +1,42 @@
+import 'codemirror/keymap/sublime'
+import 'codemirror/keymap/emacs'
+import 'codemirror/keymap/vim'
+import 'codemirror/mode/gfm/gfm'
+import 'codemirror/addon/mode/overlay.js'
+import 'codemirror/addon/mode/simple.js'
+import 'codemirror/addon/mode/multiplex.js'
+import 'codemirror/addon/selection/active-line.js'
+import 'codemirror/addon/search/searchcursor.js'
+import 'codemirror/addon/search/search.js'
+import 'codemirror/addon/search/jump-to-line.js'
+import 'codemirror/addon/search/matchesonscrollbar.js'
+import 'codemirror/addon/search/match-highlighter.js'
+import 'codemirror/addon/scroll/simplescrollbars.js'
+import 'codemirror/addon/scroll/annotatescrollbar.js'
+import 'codemirror/addon/display/panel.js'
+import 'codemirror/addon/display/placeholder.js'
+import 'codemirror/addon/display/fullscreen.js'
+import 'codemirror/addon/display/autorefresh.js'
+import 'codemirror/addon/dialog/dialog.js'
+import 'codemirror/addon/edit/matchbrackets.js'
+import 'codemirror/addon/edit/closebrackets.js'
+import 'codemirror/addon/edit/matchtags.js'
+import 'codemirror/addon/edit/closetag.js'
+import 'codemirror/addon/edit/continuelist.js'
+import 'codemirror/addon/comment/comment.js'
+import 'codemirror/addon/comment/continuecomment.js'
+import 'codemirror/addon/wrap/hardwrap.js'
+import 'codemirror/addon/fold/foldcode.js'
+import 'codemirror/addon/fold/brace-fold.js'
+import 'codemirror/addon/fold/foldgutter.js'
+import 'codemirror/addon/fold/markdown-fold.js'
+import 'codemirror/addon/fold/xml-fold.js'
+import 'codemirror/addon/merge/merge.js'
+import '../../../vendor/codemirror-spell-checker/spell-checker.min.js'
+
+import '../../../vendor/inlineAttachment/inline-attachment'
+import '../../../vendor/inlineAttachment/codemirror.inline-attachment'
+
 import * as utils from './utils'
 import config from './config'
 import statusBarTemplate from './statusbar.html'
@@ -304,13 +343,15 @@ export default class Editor {
       if (this.editor.getOption('indentWithTabs')) {
         Cookies.set('indent_type', 'tab', {
           expires: 365,
-          sameSite: window.cookiePolicy
+          sameSite: window.cookiePolicy,
+          secure: window.location.protocol === 'https:'
         })
         type.text('Tab Size:')
       } else {
         Cookies.set('indent_type', 'space', {
           expires: 365,
-          sameSite: window.cookiePolicy
+          sameSite: window.cookiePolicy,
+          secure: window.location.protocol === 'https:'
         })
         type.text('Spaces:')
       }
@@ -322,12 +363,14 @@ export default class Editor {
       if (this.editor.getOption('indentWithTabs')) {
         Cookies.set('tab_size', unit, {
           expires: 365,
-          sameSite: window.cookiePolicy
+          sameSite: window.cookiePolicy,
+          secure: window.location.protocol === 'https:'
         })
       } else {
         Cookies.set('space_units', unit, {
           expires: 365,
-          sameSite: window.cookiePolicy
+          sameSite: window.cookiePolicy,
+          secure: window.location.protocol === 'https:'
         })
       }
       widthLabel.text(unit)
@@ -396,7 +439,8 @@ export default class Editor {
       const keymap = this.editor.getOption('keyMap')
       Cookies.set('keymap', keymap, {
         expires: 365,
-        sameSite: window.cookiePolicy
+        sameSite: window.cookiePolicy,
+        secure: window.location.protocol === 'https:'
       })
       label.text(keymap)
       this.restoreOverrideEditorKeymap()
@@ -445,7 +489,8 @@ export default class Editor {
       this.editor.setOption('theme', theme)
       Cookies.set('theme', theme, {
         expires: 365,
-        sameSite: window.cookiePolicy
+        sameSite: window.cookiePolicy,
+        secure: window.location.protocol === 'https:'
       })
 
       checkTheme()
@@ -491,7 +536,8 @@ export default class Editor {
       }
       Cookies.set('spellcheck', mode === 'spell-checker', {
         expires: 365,
-        sameSite: window.cookiePolicy
+        sameSite: window.cookiePolicy,
+        secure: window.location.protocol === 'https:'
       })
 
       checkSpellcheck()
@@ -538,7 +584,8 @@ export default class Editor {
     if (overrideBrowserKeymap.is(':checked')) {
       Cookies.set('preferences-override-browser-keymap', true, {
         expires: 365,
-        sameSite: window.cookiePolicy
+        sameSite: window.cookiePolicy,
+        secure: window.location.protocol === 'https:'
       })
       this.restoreOverrideEditorKeymap()
     } else {

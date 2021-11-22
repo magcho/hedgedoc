@@ -5,9 +5,14 @@ configs that you'll have to do.
 
 This documentation will cover HTTPS setup, with comments for HTTP setup.
 
+## Cloudflare
+!!! warning
+    If you use Cloudflare as reverse proxy then you **MUST** disable the minify features for HTML, CSS and JS, or your HedgeDoc instance may be broken.
+    For more information please read the [Cloudflare documentation](https://support.cloudflare.com/hc/en-us/articles/200168196-How-do-I-minify-HTML-CSS-and-JavaScript-to-optimize-my-site-).
+
 ## HedgeDoc config
 
-[Full explanation of the configuration options](../configuration.md)
+### Useful configuration options
 
 | `config.json` parameter | Environment variable | Value | Example |
 |-------------------------|----------------------|-------|---------|
@@ -19,6 +24,23 @@ This documentation will cover HTTPS setup, with comments for HTTP setup.
 | `useSSL` |  | `false`, the communications between HedgeDoc and the proxy are unencrypted | `false` |
 | `urlAddPort` | `CMD_URL_ADDPORT` | `false`, HedgeDoc should not append its port to the URLs it links | `false` |
 | `hsts.enable` | `CMD_HSTS_ENABLE` | `true` if you host over SSL, `false` otherwise | `true` |
+
+[Full explanation of the configuration options](../configuration.md)
+
+### Configure asset link generation
+
+HedgeDoc generates links to other pages and to assets (like images, stylesheets, fonts, etc) using the following settings. You must configure them according to the URL that you use to access your instance.
+
+- `domain` (env: `CMD_DOMAIN`)
+- `protocolUseSSL` (env: `CMD_PROTOCOL_USESSL`)
+- `urlAddPort` (env: `CMD_URL_ADDPORT`)
+
+!!! example
+    You access your HedgeDoc instance using a reverse proxy via `https://markdown.example`. You must set:
+
+    - `domain` to `markdown.example`.
+    - `protocolUseSSL` to `true` because you access your instance via HTTPS.
+    - `urlAddPort` to `false` because you access the instance using the default HTTPS port.
 
 
 ## Reverse Proxy config
@@ -92,4 +114,3 @@ Here is an example config snippet:
   Include /etc/letsencrypt/options-ssl-apache.conf
 </VirtualHost>
 ```
-

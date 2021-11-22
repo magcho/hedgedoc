@@ -1,14 +1,23 @@
 /* eslint-env browser, jquery */
 /* eslint no-console: ["error", { allow: ["warn", "error", "debug"] }] */
-/* global CodeMirror, Cookies, moment, Idle, serverurl,
-   key, Dropbox, ot, hex2rgb, Visibility */
+/* global Cookies, moment, serverurl,
+   key, Dropbox, hex2rgb, Visibility */
 
 import TurndownService from 'turndown'
+import CodeMirror from 'codemirror/lib/codemirror.js'
+
+import 'jquery-ui/ui/widgets/resizable'
+import 'jquery-ui/themes/base/resizable.css'
+
+import Idle from 'Idle.Js'
+
+import '../vendor/jquery-textcomplete/jquery.textcomplete'
+
+import { ot } from '../vendor/ot/ot.min.js'
 
 import { saveAs } from 'file-saver'
 import randomColor from 'randomcolor'
 import store from 'store'
-import hljs from 'highlight.js'
 import url from 'wurl'
 import { Spinner } from 'spin.js'
 
@@ -96,36 +105,198 @@ const cursorActivityDebounce = 50
 const cursorAnimatePeriod = 100
 const supportContainers = ['success', 'info', 'warning', 'danger']
 const supportCodeModes = [
-  'javascript',
-  'typescript',
-  'jsx',
-  'htmlmixed',
-  'htmlembedded',
-  'css',
-  'xml',
-  'clike',
+  '1c',
+  'abnf',
+  'accesslog',
+  'actionscript',
+  'ada',
+  'angelscript',
+  'apache',
+  'applescript',
+  'arcade',
+  'arduino',
+  'armasm',
+  'asciidoc',
+  'aspectj',
+  'autohotkey',
+  'autoit',
+  'avrasm',
+  'awk',
+  'axapta',
+  'bash',
+  'basic',
+  'bnf',
+  'brainfuck',
+  'cal',
+  'capnproto',
+  'ceylon',
+  'c',
+  'clean',
+  'c-like',
   'clojure',
-  'ruby',
-  'python',
-  'shell',
-  'php',
-  'sql',
-  'haskell',
-  'coffeescript',
-  'yaml',
-  'pug',
-  'lua',
+  'clojure-repl',
   'cmake',
-  'nginx',
-  'perl',
-  'sass',
-  'r',
+  'coffeescript',
+  'coq',
+  'cos',
+  'cpp',
+  'crmsh',
+  'crystal',
+  'csharp',
+  'csp',
+  'css',
+  'dart',
+  'delphi',
+  'diff',
+  'django',
+  'd',
+  'dns',
   'dockerfile',
-  'tiddlywiki',
-  'mediawiki',
+  'dos',
+  'dsconfig',
+  'dts',
+  'dust',
+  'ebnf',
+  'elixir',
+  'elm',
+  'erb',
+  'erlang',
+  'erlang-repl',
+  'excel',
+  'fix',
+  'flix',
+  'fortran',
+  'fsharp',
+  'gams',
+  'gauss',
+  'gcode',
+  'gherkin',
+  'glsl',
+  'gml',
   'go',
-  'gherkin'
-].concat(hljs.listLanguages())
+  'golo',
+  'gradle',
+  'groovy',
+  'haml',
+  'handlebars',
+  'haskell',
+  'haxe',
+  'hsp',
+  'htmlbars',
+  'http',
+  'hy',
+  'inform7',
+  'ini',
+  'irpf90',
+  'isbl',
+  'java',
+  'javascript',
+  'jboss-cli',
+  'json',
+  'julia',
+  'julia-repl',
+  'kotlin',
+  'lasso',
+  'latex',
+  'ldif',
+  'leaf',
+  'less',
+  'lisp',
+  'livecodeserver',
+  'livescript',
+  'llvm',
+  'lsl',
+  'lua',
+  'makefile',
+  'markdown',
+  'mathematica',
+  'matlab',
+  'maxima',
+  'mel',
+  'mercury',
+  'mipsasm',
+  'mizar',
+  'mojolicious',
+  'monkey',
+  'moonscript',
+  'n1ql',
+  'nginx',
+  'nim',
+  'nix',
+  'node-repl',
+  'nsis',
+  'objectivec',
+  'ocaml',
+  'openscad',
+  'oxygene',
+  'parser3',
+  'perl',
+  'pf',
+  'pgsql',
+  'php',
+  'php-template',
+  'plaintext',
+  'pony',
+  'powershell',
+  'processing',
+  'profile',
+  'prolog',
+  'properties',
+  'protobuf',
+  'puppet',
+  'purebasic',
+  'python',
+  'python-repl',
+  'q',
+  'qml',
+  'reasonml',
+  'rib',
+  'r',
+  'roboconf',
+  'routeros',
+  'rsl',
+  'ruby',
+  'ruleslanguage',
+  'rust',
+  'sas',
+  'scala',
+  'scheme',
+  'scilab',
+  'scss',
+  'shell',
+  'smali',
+  'smalltalk',
+  'sml',
+  'sqf',
+  'sql',
+  'sql_more',
+  'stan',
+  'stata',
+  'step21',
+  'stylus',
+  'subunit',
+  'swift',
+  'taggerscript',
+  'tap',
+  'tcl',
+  'thrift',
+  'tp',
+  'twig',
+  'typescript',
+  'vala',
+  'vbnet',
+  'vbscript-html',
+  'vbscript',
+  'verilog',
+  'vhdl',
+  'vim',
+  'x86asm',
+  'xl',
+  'xml',
+  'xquery',
+  'yaml',
+  'zephir'
+]
 const supportCharts = ['sequence', 'flow', 'graphviz', 'mermaid', 'abc']
 const supportHeaders = [
   {
@@ -450,6 +621,11 @@ Visibility.change(function (e, state) {
 
 // when page ready
 $(document).ready(function () {
+  // set global ajax timeout
+  $.ajaxSetup({
+    timeout: 10000
+  })
+
   idle.checkAway()
   checkResponsive()
   // if in smaller screen, we don't need advanced scrollbar
@@ -1927,7 +2103,8 @@ function toggleNightMode () {
   } else {
     Cookies.set('nightMode', !isActive, {
       expires: 365,
-      sameSite: window.cookiePolicy
+      sameSite: window.cookiePolicy,
+      secure: window.location.protocol === 'https:'
     })
   }
 }

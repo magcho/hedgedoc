@@ -27,6 +27,7 @@ const errors = require('./lib/errors')
 const models = require('./lib/models')
 const csp = require('./lib/csp')
 const metrics = require('./lib/prometheus')
+const { useUnless } = require('./lib/utils')
 
 const supportedLocalesList = Object.keys(require('./locales/_supported.json'))
 
@@ -73,10 +74,6 @@ metrics.setupCustomPrometheusMetrics()
 
 // socket io
 const io = require('socket.io')(server, { cookie: false })
-io.engine.ws = new (require('ws').Server)({
-  noServer: true,
-  perMessageDeflate: false
-})
 
 // others
 const realtime = require('./lib/realtime.js')
@@ -147,7 +144,7 @@ app.use('/uploads', express.static(path.resolve(__dirname, config.uploadsPath), 
 app.use('/default.md', express.static(path.resolve(__dirname, config.defaultNotePath), { maxAge: config.staticCacheTime }))
 
 // session
-app.use(session({
+app.use(useUnless(['/status', '/metrics'], session({
   name: config.sessionName,
   secret: config.sessionSecret,
   resave: false, // don't save session if unmodified
@@ -159,7 +156,7 @@ app.use(session({
     secure: config.useSSL || config.protocolUseSSL || false
   },
   store: sessionStore
-}))
+})))
 
 // session resumption
 const tlsSessionStore = {}
@@ -194,7 +191,6 @@ app.engine('ejs', ejs.renderFile)
 // set view engine
 app.set('view engine', 'ejs')
 // set generally available variables for all views
-app.locals.useCDN = config.useCDN
 app.locals.serverURL = config.serverURL
 app.locals.sourceURL = config.sourceURL
 app.locals.allowAnonymous = config.allowAnonymous
@@ -271,21 +267,38 @@ function startListen () {
   }
 }
 
-// sync db then start listen
-models.sequelize.authenticate().then(function () {
-  models.runMigrations().then(() => {
-    sessionStore.sync()
-    // check if realtime is ready
-    if (realtime.isReady()) {
-      models.Revision.checkAllNotesRevision(function (err, notes) {
-        if (err) throw new Error(err)
-        if (!notes || notes.length <= 0) return startListen()
-      })
+const maxDBTries = 30
+let currentDBTry = 1
+function syncAndListen () {
+  // sync db then start listen
+  models.sequelize.authenticate().then(function () {
+    models.runMigrations().then(() => {
+      sessionStore.sync()
+      // check if realtime is ready
+      if (realtime.isReady()) {
+        models.Revision.checkAllNotesRevision(function (err, notes) {
+          if (err) throw new Error(err)
+          if (!notes || notes.length <= 0) return startListen()
+        })
+      } else {
+        logger.error('server still not ready after db synced')
+        process.exit(1)
+      }
+    })
+  }).catch(() => {
+    if (currentDBTry < maxDBTries) {
+      logger.warn(`Database cannot be reached. Try ${currentDBTry} of ${maxDBTries}.`)
+      currentDBTry++
+      setTimeout(function () {
+        syncAndListen()
+      }, 1000)
     } else {
-      throw new Error('server still not ready after db synced')
+      logger.error('Cannot reach database! Exiting.')
+      process.exit(1)
     }
   })
-})
+}
+syncAndListen()
 
 // log uncaught exception
 process.on('uncaughtException', function (err) {
@@ -295,9 +308,15 @@ process.on('uncaughtException', function (err) {
   process.exit(1)
 })
 
+let alreadyHandlingTermSignals = false
 // install exit handler
 function handleTermSignals () {
+  if (alreadyHandlingTermSignals) {
+    logger.info('Forcefully exiting.')
+    process.exit(1)
+  }
   logger.info('HedgeDoc has been killed by signal, try to exit gracefully...')
+  alreadyHandlingTermSignals = true
   realtime.maintenance = true
   // disconnect all socket.io clients
   Object.keys(io.sockets.sockets).forEach(function (key) {
@@ -317,17 +336,28 @@ function handleTermSignals () {
       }
     })
   }
+  const maxCleanTries = 30
+  let currentCleanTry = 1
   const checkCleanTimer = setInterval(function () {
     if (realtime.isReady()) {
       models.Revision.checkAllNotesRevision(function (err, notes) {
-        if (err) return logger.error(err)
+        if (err) {
+          logger.error('Error while saving note revisions: ' + err)
+          if (currentCleanTry <= maxCleanTries) {
+            logger.warn(`Trying again. Try ${currentCleanTry} of ${maxCleanTries}`)
+            currentCleanTry++
+            return null
+          }
+          logger.error(`Could not save note revisions after ${maxCleanTries} tries! Exiting.`)
+          process.exit(1)
+        }
         if (!notes || notes.length <= 0) {
           clearInterval(checkCleanTimer)
-          return process.exit(0)
+          process.exit(0)
         }
       })
     }
-  }, 100)
+  }, 200)
 }
 process.on('SIGINT', handleTermSignals)
 process.on('SIGTERM', handleTermSignals)

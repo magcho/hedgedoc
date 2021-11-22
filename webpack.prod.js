@@ -16,15 +16,23 @@ module.exports = [
     optimization: {
       minimizer: [
         new ESBuildMinifyPlugin({
-          target: 'es2015'
+          target: 'es2015',
+          exclude: ['MathJax/extensions/a11y/mathmaps']
         })
-      ]
-    }
+      ],
+      splitChunks: {
+        chunks: 'all'
+      }
+    },
+    devtool: 'source-map'
   }),
   merge(htmlexport, {
     mode: 'production',
     optimization: {
       minimizer: [
+        new ESBuildMinifyPlugin({
+          target: 'es2015'
+        }),
         new OptimizeCSSAssetsPlugin({})
       ]
     }
